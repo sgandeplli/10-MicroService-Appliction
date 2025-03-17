@@ -1,0 +1,213 @@
+pipeline {
+    agent any
+
+    environment {
+        REPO_URL = 'https://github.com/sgandeplli/10-MicroService-Appliction.git'
+        DOCKER_HUB_USER = 'sekhar1913'
+        AD_SERVICE_IMAGE = 'sekhar1913/adservice:latest'
+        CHECKOUT_SERVICE_IMAGE = 'sekhar1913/checkoutservice:latest'
+        EMAIL_SERVICE_IMAGE = 'sekhar1913/emailservice:latest'
+        LOADGEN_SERVICE_IMAGE = 'sekhar1913/loadgenerator:latest'
+        PRODUCT_SERVICE_IMAGE = 'sekhar1913/productcatalogservice:latest'
+        SHIPPING_SERVICE_IMAGE = 'sekhar1913/shippingservice:latest'
+        CART_SERVICE_IMAGE = 'sekhar1913/cartservice:latest'
+        CURRENCY_SERVICE_IMAGE = 'sekhar1913/currencyservice:latest'
+        FRONTEND_SERVICE_IMAGE = 'sekhar1913/frontend:latest'
+        PAYMENT_SERVICE_IMAGE = 'sekhar1913/paymentservice:latest'
+        RECOMMENDATION_SERVICE_IMAGE = 'sekhar1913/recommendationservice:latest'
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git branch: 'main', url: "${REPO_URL}"
+            }
+        }
+
+        stage('Build Microservices') {
+            parallel {
+                stage('Build adservice') {
+                    steps {
+                        dir('10-MicroService-Appliction/src/adservice') {
+                            sh './gradlew build -x verifyGoogleJavaFormat'
+                        }
+                    }
+                }
+                stage('Build checkoutservice') {
+                    steps {
+                        dir('10-MicroService-Appliction/src/checkoutservice') {
+                            sh 'go build -o checkoutservice .'
+                        }
+                    }
+                }
+                stage('Build emailservice') {
+                    steps {
+                        dir('10-MicroService-Appliction/src/emailservice') {
+                            sh 'pip install -r requirements.txt'
+                        }
+                    }
+                }
+                stage('Build loadgenerator') {
+                    steps {
+                        dir('10-MicroService-Appliction/src/loadgenerator') {
+                            sh 'pip install -r requirements.txt'
+                        }
+                    }
+                }
+                stage('Build productcatalogservice') {
+                    steps {
+                        dir('10-MicroService-Appliction/src/productcatalogservice') {
+                            sh 'go build -o productcatalogservice .'
+                        }
+                    }
+                }
+                stage('Build shippingservice') {
+                    steps {
+                        dir('10-MicroService-Appliction/src/shippingservice') {
+                            sh 'go build -o shippingservice .'
+                        }
+                    }
+                }
+                stage('Build cartservice') {
+                    steps {
+                        dir('10-MicroService-Appliction/src/cartservice/src') {
+                            sh 'dotnet restore'
+                            sh 'dotnet build -c Release'
+                            sh 'dotnet publish -c Release -o out'
+                        }
+                    }
+                }
+                stage('Build currencyservice') {
+                    steps {
+                        dir('10-MicroService-Appliction/src/currencyservice') {
+                            sh 'go build -o currencyservice .'
+                        }
+                    }
+                }
+                stage('Build frontend') {
+                    steps {
+                        dir('10-MicroService-Appliction/src/frontend') {
+                            sh 'go build -o frontend .'
+                        }
+                    }
+                }
+                stage('Build paymentservice') {
+                    steps {
+                        dir('10-MicroService-Appliction/src/paymentservice') {
+                            sh 'npm install --only=production'
+                        }
+                    }
+                }
+                stage('Build recommendationservice') {
+                    steps {
+                        dir('10-MicroService-Appliction/src/recommendationservice') {
+                            sh 'pip install -r requirements.txt'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Build Docker Images') {
+            parallel {
+                stage('Build adservice Image') {
+                    steps {
+                        dir('10-MicroService-Appliction/src/adservice') {
+                            sh 'docker build -t ${AD_SERVICE_IMAGE} .'
+                        }
+                    }
+                }
+                stage('Build checkoutservice Image') {
+                    steps {
+                        dir('10-MicroService-Appliction/src/checkoutservice') {
+                            sh 'docker build -t ${CHECKOUT_SERVICE_IMAGE} .'
+                        }
+                    }
+                }
+                stage('Build emailservice Image') {
+                    steps {
+                        dir('10-MicroService-Appliction/src/emailservice') {
+                            sh 'docker build -t ${EMAIL_SERVICE_IMAGE} .'
+                        }
+                    }
+                }
+                stage('Build loadgenerator Image') {
+                    steps {
+                        dir('10-MicroService-Appliction/src/loadgenerator') {
+                            sh 'docker build -t ${LOADGEN_SERVICE_IMAGE} .'
+                        }
+                    }
+                }
+                stage('Build productcatalogservice Image') {
+                    steps {
+                        dir('10-MicroService-Appliction/src/productcatalogservice') {
+                            sh 'docker build -t ${PRODUCT_SERVICE_IMAGE} .'
+                        }
+                    }
+                }
+                stage('Build shippingservice Image') {
+                    steps {
+                        dir('10-MicroService-Appliction/src/shippingservice') {
+                            sh 'docker build -t ${SHIPPING_SERVICE_IMAGE} .'
+                        }
+                    }
+                }
+                stage('Build cartservice Image') {
+                    steps {
+                        dir('10-MicroService-Appliction/src/cartservice/src') {
+                            sh 'docker build -t ${CART_SERVICE_IMAGE} .'
+                        }
+                    }
+                }
+                stage('Build currencyservice Image') {
+                    steps {
+                        dir('10-MicroService-Appliction/src/currencyservice') {
+                            sh 'docker build -t ${CURRENCY_SERVICE_IMAGE} .'
+                        }
+                    }
+                }
+                stage('Build frontend Image') {
+                    steps {
+                        dir('10-MicroService-Appliction/src/frontend') {
+                            sh 'docker build -t ${FRONTEND_SERVICE_IMAGE} .'
+                        }
+                    }
+                }
+                stage('Build paymentservice Image') {
+                    steps {
+                        dir('10-MicroService-Appliction/src/paymentservice') {
+                            sh 'docker build -t ${PAYMENT_SERVICE_IMAGE} .'
+                        }
+                    }
+                }
+                stage('Build recommendationservice Image') {
+                    steps {
+                        dir('10-MicroService-Appliction/src/recommendationservice') {
+                            sh 'docker build -t ${RECOMMENDATION_SERVICE_IMAGE} .'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Push Docker Images') {
+            steps {
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', 'docker-hub-credentials') {
+                        sh 'docker push ${AD_SERVICE_IMAGE}'
+                        sh 'docker push ${CHECKOUT_SERVICE_IMAGE}'
+                        sh 'docker push ${EMAIL_SERVICE_IMAGE}'
+                        sh 'docker push ${LOADGEN_SERVICE_IMAGE}'
+                        sh 'docker push ${PRODUCT_SERVICE_IMAGE}'
+                        sh 'docker push ${SHIPPING_SERVICE_IMAGE}'
+                        sh 'docker push ${CART_SERVICE_IMAGE}'
+                        sh 'docker push ${CURRENCY_SERVICE_IMAGE}'
+                        sh 'docker push ${FRONTEND_SERVICE_IMAGE}'
+                        sh 'docker push ${PAYMENT_SERVICE_IMAGE}'
+                        sh 'docker push ${RECOMMENDATION_SERVICE_IMAGE}'
+                    }
+                }
+            }
+        }
+    }
+}
