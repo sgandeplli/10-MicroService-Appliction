@@ -4,23 +4,41 @@ pipeline {
     environment {
         REPO_URL = 'https://github.com/sgandeplli/10-MicroService-Appliction.git'
         DOCKER_HUB_USER = 'sekhar1913'
-        AD_SERVICE_IMAGE = 'sekhar1913/adservice:latest'
-        CHECKOUT_SERVICE_IMAGE = 'sekhar1913/checkoutservice:latest'
-        EMAIL_SERVICE_IMAGE = 'sekhar1913/emailservice:latest'
-        LOADGEN_SERVICE_IMAGE = 'sekhar1913/loadgenerator:latest'
-        PRODUCT_SERVICE_IMAGE = 'sekhar1913/productcatalogservice:latest'
-        SHIPPING_SERVICE_IMAGE = 'sekhar1913/shippingservice:latest'
-        CART_SERVICE_IMAGE = 'sekhar1913/cartservice:latest'
-        CURRENCY_SERVICE_IMAGE = 'sekhar1913/currencyservice:latest'
-        FRONTEND_SERVICE_IMAGE = 'sekhar1913/frontend:latest'
-        PAYMENT_SERVICE_IMAGE = 'sekhar1913/paymentservice:latest'
-        RECOMMENDATION_SERVICE_IMAGE = 'sekhar1913/recommendationservice:latest'
+        CREDENTIALS_ID = 'docker-pass'  // Updated credentials ID
+        GOOGLE_CREDENTIALS = credentials('gcp-key')  
+        // Docker image names for each microservice
+        AD_SERVICE_IMAGE = 'sekhar1913/adservice:latest3'
+        CHECKOUT_SERVICE_IMAGE = 'sekhar1913/checkoutservice:latest3'
+        EMAIL_SERVICE_IMAGE = 'sekhar1913/emailservice:latest3'
+        LOADGEN_SERVICE_IMAGE = 'sekhar1913/loadgenerator:latest3'
+        PRODUCT_SERVICE_IMAGE = 'sekhar1913/productcatalogservice:latest3'
+        SHIPPING_SERVICE_IMAGE = 'sekhar1913/shippingservice:latest3'
+        CART_SERVICE_IMAGE = 'sekhar1913/cartservice:latest3'
+        CURRENCY_SERVICE_IMAGE = 'sekhar1913/currencyservice:latest3'
+        FRONTEND_SERVICE_IMAGE = 'sekhar1913/frontend:latest3'
+        PAYMENT_SERVICE_IMAGE = 'sekhar1913/paymentservice:latest3'
+        RECOMMENDATION_SERVICE_IMAGE = 'sekhar1913/recommendationservice:latest3'
+
+        // Terraform Variables
+        PROJECT_ID = 'sekhar-452813'  // Your GCP project ID
+        REGION = 'us-central1-c'      // GCP region
+        CLUSTER_NAME = 'my-cluster11' // GKE cluster name
+        NODE_COUNT = 2                // Number of nodes in the GKE cluster
+        NODE_MACHINE_TYPE = 'e2-medium'  // Machine type for the nodes
     }
 
     stages {
+        stage('Clean Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+
         stage('Clone Repository') {
             steps {
-                git branch: 'main', url: "${REPO_URL}"
+                script {
+                    sh 'git clone --verbose --progress --recurse-submodules --depth=1 ${REPO_URL}'
+                }
             }
         }
 
@@ -29,7 +47,13 @@ pipeline {
                 stage('Build adservice') {
                     steps {
                         dir('10-MicroService-Appliction/src/adservice') {
-                            sh './gradlew build -x verifyGoogleJavaFormat'
+                            script {
+                                sh 'export JAVA_HOME=/usr/lib/jvm/java-21-openjdk'   // Switch to Java 21
+                                sh 'export PATH=$JAVA_HOME/bin:$PATH'
+                                sh 'java -version'   // Verify the Java version is 21
+                                sh 'chmod +x gradlew'
+                                sh './gradlew build -x verifyGoogleJavaFormat'
+                            }
                         }
                     }
                 }
@@ -37,20 +61,6 @@ pipeline {
                     steps {
                         dir('10-MicroService-Appliction/src/checkoutservice') {
                             sh 'go build -o checkoutservice .'
-                        }
-                    }
-                }
-                stage('Build emailservice') {
-                    steps {
-                        dir('10-MicroService-Appliction/src/emailservice') {
-                            sh 'pip install -r requirements.txt'
-                        }
-                    }
-                }
-                stage('Build loadgenerator') {
-                    steps {
-                        dir('10-MicroService-Appliction/src/loadgenerator') {
-                            sh 'pip install -r requirements.txt'
                         }
                     }
                 }
@@ -80,7 +90,7 @@ pipeline {
                 stage('Build currencyservice') {
                     steps {
                         dir('10-MicroService-Appliction/src/currencyservice') {
-                            sh 'go build -o currencyservice .'
+                             sh 'npm install --only=production'
                         }
                     }
                 }
@@ -98,13 +108,7 @@ pipeline {
                         }
                     }
                 }
-                stage('Build recommendationservice') {
-                    steps {
-                        dir('10-MicroService-Appliction/src/recommendationservice') {
-                            sh 'pip install -r requirements.txt'
-                        }
-                    }
-                }
+                
             }
         }
 
@@ -190,24 +194,202 @@ pipeline {
             }
         }
 
-        stage('Push Docker Images') {
-            steps {
-                script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'docker-hub-credentials') {
-                        sh 'docker push ${AD_SERVICE_IMAGE}'
-                        sh 'docker push ${CHECKOUT_SERVICE_IMAGE}'
-                        sh 'docker push ${EMAIL_SERVICE_IMAGE}'
-                        sh 'docker push ${LOADGEN_SERVICE_IMAGE}'
-                        sh 'docker push ${PRODUCT_SERVICE_IMAGE}'
-                        sh 'docker push ${SHIPPING_SERVICE_IMAGE}'
-                        sh 'docker push ${CART_SERVICE_IMAGE}'
-                        sh 'docker push ${CURRENCY_SERVICE_IMAGE}'
-                        sh 'docker push ${FRONTEND_SERVICE_IMAGE}'
-                        sh 'docker push ${PAYMENT_SERVICE_IMAGE}'
-                        sh 'docker push ${RECOMMENDATION_SERVICE_IMAGE}'
+        stage('Push Docker Images to Docker Hub') {
+            parallel {
+                stage('Push adservice Image') {
+                    steps {
+                        script {
+                            withCredentials([usernamePassword(credentialsId: 'docker-pass', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                                sh 'echo "$DOCKER_PASS" | docker login --username "$DOCKER_USER" --password-stdin'
+                                sh 'docker push ${AD_SERVICE_IMAGE}'
+                            }
+                        }
+                    }
+                }
+                stage('Push checkoutservice Image') {
+                    steps {
+                        script {
+                            withCredentials([usernamePassword(credentialsId: 'docker-pass', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                                sh 'echo "$DOCKER_PASS" | docker login --username "$DOCKER_USER" --password-stdin'
+                                sh 'docker push ${CHECKOUT_SERVICE_IMAGE}'
+                            }
+                        }
+                    }
+                }
+                stage('Push emailservice Image') {
+                    steps {
+                        script {
+                            withCredentials([usernamePassword(credentialsId: 'docker-pass', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                                sh 'echo "$DOCKER_PASS" | docker login --username "$DOCKER_USER" --password-stdin'
+                                sh 'docker push ${EMAIL_SERVICE_IMAGE}'
+                            }
+                        }
+                    }
+                }
+                stage('Push loadgenerator Image') {
+                    steps {
+                        script {
+                            withCredentials([usernamePassword(credentialsId: 'docker-pass', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                                sh 'echo "$DOCKER_PASS" | docker login --username "$DOCKER_USER" --password-stdin'
+                                sh 'docker push ${LOADGEN_SERVICE_IMAGE}'
+                            }
+                        }
+                    }
+                }
+                stage('Push productcatalogservice Image') {
+                    steps {
+                        script {
+                            withCredentials([usernamePassword(credentialsId: 'docker-pass', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                                sh 'echo "$DOCKER_PASS" | docker login --username "$DOCKER_USER" --password-stdin'
+                                sh 'docker push ${PRODUCT_SERVICE_IMAGE}'
+                            }
+                        }
+                    }
+                }
+                stage('Push shippingservice Image') {
+                    steps {
+                        script {
+                            withCredentials([usernamePassword(credentialsId: 'docker-pass', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                                sh 'echo "$DOCKER_PASS" | docker login --username "$DOCKER_USER" --password-stdin'
+                                sh 'docker push ${SHIPPING_SERVICE_IMAGE}'
+                            }
+                        }
+                    }
+                }
+                stage('Push cartservice Image') {
+                    steps {
+                        script {
+                            withCredentials([usernamePassword(credentialsId: 'docker-pass', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                                sh 'echo "$DOCKER_PASS" | docker login --username "$DOCKER_USER" --password-stdin'
+                                sh 'docker push ${CART_SERVICE_IMAGE}'
+                            }
+                        }
+                    }
+                }
+                stage('Push currencyservice Image') {
+                    steps {
+                        script {
+                            withCredentials([usernamePassword(credentialsId: 'docker-pass', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                                sh 'echo "$DOCKER_PASS" | docker login --username "$DOCKER_USER" --password-stdin'
+                                sh 'docker push ${CURRENCY_SERVICE_IMAGE}'
+                            }
+                        }
+                    }
+                }
+                stage('Push frontend Image') {
+                    steps {
+                        script {
+                            withCredentials([usernamePassword(credentialsId: 'docker-pass', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                                sh 'echo "$DOCKER_PASS" | docker login --username "$DOCKER_USER" --password-stdin'
+                                sh 'docker push ${FRONTEND_SERVICE_IMAGE}'
+                            }
+                        }
+                    }
+                }
+                stage('Push paymentservice Image') {
+                    steps {
+                        script {
+                            withCredentials([usernamePassword(credentialsId: 'docker-pass', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                                sh 'echo "$DOCKER_PASS" | docker login --username "$DOCKER_USER" --password-stdin'
+                                sh 'docker push ${PAYMENT_SERVICE_IMAGE}'
+                            }
+                        }
+                    }
+                }
+                stage('Push recommendationservice Image') {
+                    steps {
+                        script {
+                            withCredentials([usernamePassword(credentialsId: 'docker-pass', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                                sh 'echo "$DOCKER_PASS" | docker login --username "$DOCKER_USER" --password-stdin'
+                                sh 'docker push ${RECOMMENDATION_SERVICE_IMAGE}'
+                            }
+                        }
                     }
                 }
             }
         }
+
+        
+        //         stage('Terraform Apply: Create GKE Cluster') {
+        //     steps {
+        //         script {
+        //             withCredentials([file(credentialsId: 'gcp-key', variable: 'GCP_KEY')]) {
+        //                 // Set the GOOGLE_APPLICATION_CREDENTIALS environment variable
+        //                 sh 'export GOOGLE_APPLICATION_CREDENTIALS=$GCP_KEY'
+        
+        //                 // Authenticate with Google Cloud
+        //                 sh 'gcloud auth activate-service-account --key-file=$GCP_KEY'
+        //                 sh 'gcloud config set project ${PROJECT_ID}'
+        //                 sh 'gcloud config set compute/region ${REGION}'
+        
+        //                 // Change directory to where Terraform configuration files are located
+        //                 dir('10-MicroService-Appliction/terra') {
+        //                     // Initialize Terraform
+        //                     sh 'terraform init'
+        
+        //                     // Apply Terraform plan to create resources
+        //                     sh 'terraform apply -auto-approve'
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+
+        
+                stage('Terraform: Apply Infrastructure') {
+             steps {
+                script {
+                    echo 'Applying Terraform configurations to create GCP resources...'
+                    // Ensure you're authenticated and have the necessary permissions to create resources
+                    withCredentials([file(credentialsId: 'gcp-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
+                        // Authenticate with Google Cloud
+                        sh 'gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS'
+        
+                        // Set the environment variable for Terraform GCP provider to use
+                        sh 'export GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS'
+        
+                        // Change directory to where the Terraform configuration files are located
+                        dir('10-MicroService-Appliction/terra') {
+                            // Initialize Terraform
+                            sh 'terraform init'
+        
+                            // Apply Terraform plan to create resources
+                            sh 'terraform apply -auto-approve -var="project_id=${PROJECT_ID}" -var="region=${REGION}" -var="cluster_name=${CLUSTER_NAME}" -var="node_count=${NODE_COUNT}" -var="node_machine_type=${NODE_MACHINE_TYPE}"'
+                        }
+                    }
+                }
+            }
+        }
+
+        
+        
+            stage('Deploy to GKE') {
+                steps {
+                    script {
+                        // Authenticate with Google Cloud
+                        withCredentials([file(credentialsId: 'gcp-key', variable: 'GCP_KEY')]) {
+                            sh 'gcloud auth activate-service-account --key-file=$GCP_KEY'
+                            
+                            // Set the project and region
+                            sh 'gcloud config set project ${PROJECT_ID}'
+                            sh 'gcloud config set compute/region ${REGION}'
+                            
+                            // Get credentials for kubectl to access the GKE cluster
+                            sh 'gcloud container clusters get-credentials ${CLUSTER_NAME} --region ${REGION}'
+                            
+                            // Change directory to where the Kubernetes deployment manifest file is located
+                            dir('10-MicroService-Appliction/k8s') {
+                                // Deploy the application using kubectl
+                                sh 'kubectl apply -f deploy.yaml'
+                            }
+                        }
+                    }
+                }
+            }
+
+
+
+        
+
     }
 }
