@@ -47,7 +47,7 @@ spec:
               - ALL
           privileged: false
           readOnlyRootFilesystem: true
-        image: sekhar1913/emailservice:latest
+        image: sekhar1913/emailservice:latest1
         ports:
         - containerPort: 8080
         env:
@@ -112,7 +112,7 @@ spec:
                 - ALL
             privileged: false
             readOnlyRootFilesystem: true
-          image: sekhar1913/checkoutservice:latest
+          image: sekhar1913/checkoutservice:latest1
           ports:
           - containerPort: 5050
           readinessProbe:
@@ -186,7 +186,7 @@ spec:
               - ALL
           privileged: false
           readOnlyRootFilesystem: true
-        image: sekhar1913/recommendationservice:latest
+        image: sekhar1913/recommendationservice:latest1
         ports:
         - containerPort: 8080
         readinessProbe:
@@ -255,7 +255,7 @@ spec:
                 - ALL
             privileged: false
             readOnlyRootFilesystem: true
-          image: sekhar1913/frontend:latest
+          image: sekhar1913/frontend:latest1
           ports:
           - containerPort: 8080
           readinessProbe:
@@ -354,7 +354,7 @@ spec:
               - ALL
           privileged: false
           readOnlyRootFilesystem: true
-        image: sekhar1913/paymentservice:latest
+        image: sekhar1913/paymentservice:latest1
         ports:
         - containerPort: 50051
         env:
@@ -418,7 +418,7 @@ spec:
               - ALL
           privileged: false
           readOnlyRootFilesystem: true
-        image: sekhar1913/productcatalogservice:latest
+        image: sekhar1913/productcatalogservice:latest1
         ports:
         - containerPort: 3550
         readinessProbe:
@@ -484,7 +484,7 @@ spec:
               - ALL
           privileged: false
           readOnlyRootFilesystem: true
-        image: sekhar1913/shippingservice:latest
+        image: sekhar1913/shippingservice:latest1
         ports:
         - containerPort: 50051
         env:
