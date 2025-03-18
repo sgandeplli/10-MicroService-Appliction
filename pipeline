@@ -21,10 +21,10 @@ pipeline {
 
         // Terraform Variables
         PROJECT_ID = 'sekhar-452813'  // Your GCP project ID
-        REGION = 'us-central1-c'      // GCP region
+        REGION = 'us-west3-c'      // GCP region
         CLUSTER_NAME = 'my-cluster11' // GKE cluster name
         NODE_COUNT = 2                // Number of nodes in the GKE cluster
-        NODE_MACHINE_TYPE = 'e2-medium'  // Machine type for the nodes
+        NODE_MACHINE_TYPE = 'e2-standard-4'  // Machine type for the nodes
     }
 
     stages {
